@@ -21,8 +21,8 @@
 ; (declare-const x Int)
 ; (declare-const y Int)
 
-; (assert (= y (- x (- y (/ x 2)))))
 ; (assert (= x 20))
+; (assert (= y (- x (- y (/ x 2)))))
 
 ; (check-sat)
 ; (get-model)
@@ -31,7 +31,7 @@
 ; (declare-const n Int)
 ; (declare-const x Int)
 
-; (assert (= n 7))
+; (assert (= n 29))
 ; (assert (and (> x 1) (and (= 0 (mod n x)) (not(= n x)))))
 
 ; (check-sat)

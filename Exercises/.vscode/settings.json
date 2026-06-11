@@ -1,0 +1,4 @@
+{
+  "ollama-autopilot.model.modelName": "gpt-oss:20b",
+  "ollama-autopilot.general.autopilotEnabled": false
+}

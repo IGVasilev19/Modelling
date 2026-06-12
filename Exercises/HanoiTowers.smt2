@@ -8,6 +8,43 @@
 ;maps them to a rod number
 (declare-fun diskAtRodOnStep (Int Int) Int)
 
+(define-fun notOnRod ((move Int) (disk Int) (rod Int)) Bool
+    (not (= (diskAtRodOnStep (- move 1) disk) rod))
+)
+
+(define-fun smallerOnSameRod ((move Int) (smallerDisk Int) (biggerDisk Int)) Bool
+    (= (diskAtRodOnStep (- move 1) smallerDisk) (diskAtRodOnStep (- move 1) biggerDisk))
+)
+
+(define-fun persistDisk ((move Int) (disk Int)) Bool
+    (= (diskAtRodOnStep move disk) (diskAtRodOnStep (- move 1) disk))
+)
+
+(define-fun moveDiskTo ((move Int) (disk Int) (rod Int)) Bool
+    (and
+        (notOnRod move disk rod)
+        (= (diskAtRodOnStep move disk) rod)
+    )
+)
+
+(define-fun canMoveDisk2To ((move Int) (rod Int)) Bool
+    (and
+        (notOnRod move 1 rod)
+        (notOnRod move 2 rod)
+        (not (smallerOnSameRod move 1 2))
+    )
+)
+
+(define-fun canMoveDisk3To ((move Int) (rod Int)) Bool
+    (and
+        (notOnRod move 1 rod)
+        (notOnRod move 2 rod)
+        (notOnRod move 3 rod)
+        (not (smallerOnSameRod move 1 3))
+        (not (smallerOnSameRod move 2 3))
+    )
+)
+
 (assert
 ;We set the initial starting position for each disk
     (and
@@ -28,14 +65,14 @@
                         ;If we choose to move disk 1, we have three options:
                         ;move to rod1,2 or 3, but for each one the only thing we have to ensure
                         ;is that when we move the disk it doesn't end up in the same position it already is at.
-                        (and (not (= (diskAtRodOnStep (- move 1) 1) 1)) (= (diskAtRodOnStep move 1) 1))
-                        (and (not (= (diskAtRodOnStep (- move 1) 1) 2)) (= (diskAtRodOnStep move 1) 2))
-                        (and (not (= (diskAtRodOnStep (- move 1) 1) 3)) (= (diskAtRodOnStep move 1) 3))
+                        (moveDiskTo move 1 1)
+                        (moveDiskTo move 1 2)
+                        (moveDiskTo move 1 3)
                     )
                     (and
                     ;We have to persist the positions of the rest of the disks.
-                        (= (diskAtRodOnStep move 2) (diskAtRodOnStep (- move 1) 2))
-                        (= (diskAtRodOnStep move 3) (diskAtRodOnStep (- move 1) 3))
+                        (persistDisk move 2)
+                        (persistDisk move 3)
                     )
                 )
                 (and 
@@ -45,61 +82,43 @@
                         ;But here we also need to check two additional things: if a smaller disk is currently on top of this one
                         ;and also if that is not the case, then we have to check if a smaller disk is already at the rod that we want to move
                         ;this disk to.
-                            (not (= (diskAtRodOnStep (- move 1) 1) 1))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 1))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 2)))
+                            (canMoveDisk2To move 1)
                             (= (diskAtRodOnStep move 2) 1)
                         )
                         (and
                             ;We do the same check for each possible option
-                            (not (= (diskAtRodOnStep (- move 1) 1) 2))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 2))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 2)))
+                            (canMoveDisk2To move 2)
                             (= (diskAtRodOnStep move 2) 2)
                         )
                         (and
-                            (not (= (diskAtRodOnStep (- move 1) 1) 3))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 3))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 2)))
+                            (canMoveDisk2To move 3)
                             (= (diskAtRodOnStep move 2) 3)
                         )
                     )
                     (and
-                        (= (diskAtRodOnStep move 1) (diskAtRodOnStep (- move 1) 1))
-                        (= (diskAtRodOnStep move 3) (diskAtRodOnStep (- move 1) 3))
+                        (persistDisk move 1)
+                        (persistDisk move 3)
                     )
                 )
                 (and 
                     (or
                         (and
                         ;Same,but now we have to check for multiple smaller disks
-                            (not (= (diskAtRodOnStep (- move 1) 1) 1))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 1))
-                            (not (= (diskAtRodOnStep (- move 1) 3) 1))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 3)))
-                            (not (= (diskAtRodOnStep (- move 1) 2) (diskAtRodOnStep (- move 1) 3)))
+                            (canMoveDisk3To move 1)
                             (= (diskAtRodOnStep move 3) 1)
                         )
                         (and
-                            (not (= (diskAtRodOnStep (- move 1) 1) 2))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 2))
-                            (not (= (diskAtRodOnStep (- move 1) 3) 2))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 3)))
-                            (not (= (diskAtRodOnStep (- move 1) 2) (diskAtRodOnStep (- move 1) 3)))
+                            (canMoveDisk3To move 2)
                             (= (diskAtRodOnStep move 3) 2)
                         )
                         (and
-                            (not (= (diskAtRodOnStep (- move 1) 1) 3))
-                            (not (= (diskAtRodOnStep (- move 1) 2) 3))
-                            (not (= (diskAtRodOnStep (- move 1) 3) 3))
-                            (not (= (diskAtRodOnStep (- move 1) 1) (diskAtRodOnStep (- move 1) 3)))
-                            (not (= (diskAtRodOnStep (- move 1) 2) (diskAtRodOnStep (- move 1) 3)))
+                            (canMoveDisk3To move 3)
                             (= (diskAtRodOnStep move 3) 3)
                         )
                     )
                     (and
-                        (= (diskAtRodOnStep move 1) (diskAtRodOnStep (- move 1) 1))
-                        (= (diskAtRodOnStep move 2) (diskAtRodOnStep (- move 1) 2))
+                        (persistDisk move 1)
+                        (persistDisk move 2)
                     )
                 )
             )
@@ -113,15 +132,11 @@
 ;and secondly that the rod they are at after the last move is complete is 
 ;different than the initial rod they were on.
     (and 
-        (and 
-            (= (diskAtRodOnStep 7 1) (diskAtRodOnStep 7 2))
-            (= (diskAtRodOnStep 7 2) (diskAtRodOnStep 7 3))
-        )
-        (and
-            (not (= (diskAtRodOnStep 7 1) (diskAtRodOnStep 0 1)))
-            (not (= (diskAtRodOnStep 7 2) (diskAtRodOnStep 0 2)))
-            (not (= (diskAtRodOnStep 7 3) (diskAtRodOnStep 0 3)))
-        )
+        (= (diskAtRodOnStep 7 1) (diskAtRodOnStep 7 2))
+        (= (diskAtRodOnStep 7 2) (diskAtRodOnStep 7 3))
+        (not (= (diskAtRodOnStep 7 1) (diskAtRodOnStep 0 1)))
+        (not (= (diskAtRodOnStep 7 2) (diskAtRodOnStep 0 2)))
+        (not (= (diskAtRodOnStep 7 3) (diskAtRodOnStep 0 3)))
     )
 )
 

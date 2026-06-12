@@ -15,6 +15,41 @@
 (assert (= (people 3) 2))
 (assert (= (people 4) 1))
 
+(define-fun isOnOppositeSide ((crossing Int) (person Int)) Bool
+    (= (personCrossed crossing person) true)
+)
+
+(define-fun isOnInitialSide ((crossing Int) (person Int)) Bool
+    (= (personCrossed crossing person) false)
+)
+
+(define-fun persistCrossed ((crossing Int) (person Int)) Bool
+    (= (personCrossed (+ crossing 1) person) (personCrossed crossing person))
+)
+
+(define-fun markCrossed ((crossing Int) (person Int)) Bool
+    (= (personCrossed (+ crossing 1) person) true)
+)
+
+(define-fun markReturned ((crossing Int) (person Int)) Bool
+    (= (personCrossed (+ crossing 1) person) false)
+)
+
+(define-fun crossingCost ((crossing Int)) Bool
+    (ite (> (people (crosser1 crossing)) (people (crosser2 crossing)))
+        (= (timeStepSum crossing) (people (crosser1 crossing)))
+        (= (timeStepSum crossing) (people (crosser2 crossing)))
+    )
+)
+
+(define-fun updateStateAfterReturn ((crossing Int) (person Int)) Bool
+    (= (personCrossed (+ crossing 1) person) (ite (= (crosser1 crossing) person) false (personCrossed crossing person)))
+)
+
+(define-fun updateStateAfterCross ((crossing Int) (person Int)) Bool
+    (= (personCrossed (+ crossing 1) person) (ite (or (= (crosser1 crossing) person) (= (crosser2 crossing) person)) true (personCrossed crossing person)))
+)
+
 (assert
   (forall ((crossing Int))
     (=> (and (<= 1 crossing) (<= crossing 5));In the best possible scenario all of them should have crossed in a total of 5 crossings
@@ -25,50 +60,47 @@
         ;Selects the person who will return the torch, for each possible person 
         ;to be chosen it first checks if that person is already on the opposite site of the bridge.
             (or 
-                (and (= (personCrossed crossing 1) true) (= (crosser1 crossing) 1))
-                (and (= (personCrossed crossing 2) true) (= (crosser1 crossing) 2))
-                (and (= (personCrossed crossing 3) true) (= (crosser1 crossing) 3))
-                (and (= (personCrossed crossing 4) true) (= (crosser1 crossing) 4))
+                (and (isOnOppositeSide crossing 1) (= (crosser1 crossing) 1))
+                (and (isOnOppositeSide crossing 2) (= (crosser1 crossing) 2))
+                (and (isOnOppositeSide crossing 3) (= (crosser1 crossing) 3))
+                (and (isOnOppositeSide crossing 4) (= (crosser1 crossing) 4))
             )
             ;The time it took for each crossing is saved in a declare-fun timeStepSum,
             ;which maps the crossing to the time it took to complete it 
             ;For each person we either set the personCrossed to false is that was the chosen person
             ;to return, or we persist their current personCrossed state for the next crossing.
             (= (timeStepSum crossing) (people (crosser1 crossing)))
-            (= (personCrossed (+ crossing 1) 1) (ite (= (crosser1 crossing) 1) false (personCrossed crossing 1)))
-            (= (personCrossed (+ crossing 1) 2) (ite (= (crosser1 crossing) 2) false (personCrossed crossing 2)))
-            (= (personCrossed (+ crossing 1) 3) (ite (= (crosser1 crossing) 3) false (personCrossed crossing 3)))
-            (= (personCrossed (+ crossing 1) 4) (ite (= (crosser1 crossing) 4) false (personCrossed crossing 4)))
+            (updateStateAfterReturn crossing 1)
+            (updateStateAfterReturn crossing 2)
+            (updateStateAfterReturn crossing 3)
+            (updateStateAfterReturn crossing 4)
         )
         (and
             (or 
                 ;It starts selecting the first person for the pair which will cross. First checks if the person is currently on the initial side of the bridge,
                 ;then if chosen, sets the personCrossed state for the next crossing to true.
-                (and (= (personCrossed crossing 1) false) (= (crosser1 crossing) 1) (= (personCrossed (+ crossing 1) 1) true)) 
-                (and (= (personCrossed crossing 2) false) (= (crosser1 crossing) 2) (= (personCrossed (+ crossing 1) 2) true)) 
-                (and (= (personCrossed crossing 3) false) (= (crosser1 crossing) 3) (= (personCrossed (+ crossing 1) 3) true)) 
-                (and (= (personCrossed crossing 4) false) (= (crosser1 crossing) 4) (= (personCrossed (+ crossing 1) 4) true))
+                (and (isOnInitialSide crossing 1) (= (crosser1 crossing) 1) (markCrossed crossing 1)) 
+                (and (isOnInitialSide crossing 2) (= (crosser1 crossing) 2) (markCrossed crossing 2)) 
+                (and (isOnInitialSide crossing 3) (= (crosser1 crossing) 3) (markCrossed crossing 3)) 
+                (and (isOnInitialSide crossing 4) (= (crosser1 crossing) 4) (markCrossed crossing 4))
             )
             (or 
             ;Equivalet for the second person of the pair. 
-                (and (= (personCrossed crossing 1) false) (= (crosser2 crossing) 1) (= (personCrossed (+ crossing 1) 1) true))
-                (and (= (personCrossed crossing 2) false) (= (crosser2 crossing) 2) (= (personCrossed (+ crossing 1) 2) true)) 
-                (and (= (personCrossed crossing 3) false) (= (crosser2 crossing) 3) (= (personCrossed (+ crossing 1) 3) true)) 
-                (and (= (personCrossed crossing 4) false) (= (crosser2 crossing) 4) (= (personCrossed (+ crossing 1) 4) true))
+                (and (isOnInitialSide crossing 1) (= (crosser2 crossing) 1) (markCrossed crossing 1))
+                (and (isOnInitialSide crossing 2) (= (crosser2 crossing) 2) (markCrossed crossing 2)) 
+                (and (isOnInitialSide crossing 3) (= (crosser2 crossing) 3) (markCrossed crossing 3)) 
+                (and (isOnInitialSide crossing 4) (= (crosser2 crossing) 4) (markCrossed crossing 4))
             )
             ;Ensures that the two chosen people are not the same person
             ;Checks which person has a slower pace and that is set as the cost of the crossing. 
             (not (= (crosser1 crossing) (crosser2 crossing)))
-            (ite (> (people (crosser1 crossing)) (people (crosser2 crossing)))
-                    (= (timeStepSum crossing) (people (crosser1 crossing))) 
-                    (= (timeStepSum crossing) (people (crosser2 crossing)))
-            )
+            (crossingCost crossing)
             ;Switches the personCrossed state of the two chosen people to
             ;true for the next crossing and persists the states of the rest.
-            (= (personCrossed (+ crossing 1) 1) (ite (or (= (crosser1 crossing) 1) (= (crosser2 crossing) 1)) true (personCrossed crossing 1)))
-            (= (personCrossed (+ crossing 1) 2) (ite (or (= (crosser1 crossing) 2) (= (crosser2 crossing) 2)) true (personCrossed crossing 2)))
-            (= (personCrossed (+ crossing 1) 3) (ite (or (= (crosser1 crossing) 3) (= (crosser2 crossing) 3)) true (personCrossed crossing 3)))
-            (= (personCrossed (+ crossing 1) 4) (ite (or (= (crosser1 crossing) 4) (= (crosser2 crossing) 4)) true (personCrossed crossing 4)))
+            (updateStateAfterCross crossing 1)
+            (updateStateAfterCross crossing 2)
+            (updateStateAfterCross crossing 3)
+            (updateStateAfterCross crossing 4)
         )
       )
     )
@@ -82,5 +114,3 @@
 
 (check-sat)
 (get-value (sum))
-
-

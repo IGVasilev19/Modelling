@@ -8,18 +8,23 @@
 ;maps them to a rod number
 (declare-fun diskAtRodOnStep (Int Int) Int)
 
+;Checks if a disk is not on a rod
 (define-fun notOnRod ((move Int) (disk Int) (rod Int)) Bool
     (not (= (diskAtRodOnStep (- move 1) disk) rod))
 )
 
+;Takes a move a smallerDisk number and a biggerDisk number and sees there they are 
+;currently on the same rod
 (define-fun smallerOnSameRod ((move Int) (smallerDisk Int) (biggerDisk Int)) Bool
     (= (diskAtRodOnStep (- move 1) smallerDisk) (diskAtRodOnStep (- move 1) biggerDisk))
 )
 
+;Persists the state of a disk
 (define-fun persistDisk ((move Int) (disk Int)) Bool
     (= (diskAtRodOnStep move disk) (diskAtRodOnStep (- move 1) disk))
 )
 
+;Changes the position of a disk(moves it from a rod to another).
 (define-fun moveDiskTo ((move Int) (disk Int) (rod Int)) Bool
     (and
         (notOnRod move disk rod)
@@ -27,6 +32,9 @@
     )
 )
 
+;Checks if disk2 can be moved to a a certain rod. Checks if the smaller disk
+;is currently on that rod, if it itself is already at that rod and also if there
+;is a smaller disk on top of itself currently.
 (define-fun canMoveDisk2To ((move Int) (rod Int)) Bool
     (and
         (notOnRod move 1 rod)
@@ -35,6 +43,7 @@
     )
 )
 
+;Equivalent to canMoveDisk2To, but now it checks for both smaller disks
 (define-fun canMoveDisk3To ((move Int) (rod Int)) Bool
     (and
         (notOnRod move 1 rod)
@@ -45,8 +54,8 @@
     )
 )
 
+;Set the initial starting position for each disk
 (assert
-;We set the initial starting position for each disk
     (and
         (= (diskAtRodOnStep 0 1) 1)
         (= (diskAtRodOnStep 0 2) 1)
@@ -57,7 +66,7 @@
 (assert
     (forall ((move Int))
         ;Since we know that with 3 disks and 3 rods the most optimal solution takes 7 moves to complete(from 2^n-1)
-        (=> (and (<= 1 move) (<= move 7))
+        (implies (and (<= 1 move) (<= move 7))
         ;Each time only one disk can be moved
             (or
                 (and  
